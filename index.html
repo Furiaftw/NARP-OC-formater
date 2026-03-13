@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NARP Character Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .bg-narp-card { background-color: #1e293b; }
+        .bg-narp-bg { background-color: #0f172a; }
+        .text-narp-cyan { color: #22d3ee; }
+        .border-narp-cyan { border-color: #22d3ee; }
+        .bg-narp-cyan { background-color: #22d3ee; }
+        .text-narp-error { color: #f43f5e; }
+        .border-narp-error { border-color: #f43f5e; }
+        .bg-narp-error { background-color: #f43f5e; }
+        .text-narp-warning { color: #fbbf24; }
+        .text-narp-textMuted { color: #94a3b8; }
+        .border-narp-border { border-color: #334155; }
+        
+        select, input[type="text"], input[type="number"], textarea {
+            width: 100%; background-color: #0f172a; border: 1px solid #334155; border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem; color: #e2e8f0; outline: none; transition: border-color 0.2s;
+        }
+        select:focus, input:focus, textarea:focus { border-color: #22d3ee; }
+        
+        .accordion-content { display: none; }
+        .accordion-content.open { display: block; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <header class="max-w-4xl mx-auto mb-8 text-center">
+        <h1 class="text-3xl md:text-5xl font-bold text-narp-cyan mb-2 tracking-tight">NARP Character Creator</h1>
+        <p class="text-narp-textMuted">Build your shinobi, validate your stats, and generate your sheet.</p>
+    </header>
+
+    <main class="max-w-4xl mx-auto">
+        <form id="character-form" class="space-y-6">
+
+            <div class="bg-narp-card border border-narp-border rounded-xl shadow-lg">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-core', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="fingerprint" class="text-narp-cyan"></i> Core Identity</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300 transform rotate-180"></i>
+                </button>
+                <div id="sec-core" class="accordion-content open px-6 pb-6 border-t border-narp-border/50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-narp-textMuted uppercase mb-2">Character Slot</label>
+                            <select id="char-slot">
+                                <option value="" disabled selected>Select Slot...</option>
+                                <option value="1">First Character</option>
+                                <option value="2">Second Character</option>
+                                <option value="3">Third Character</option>
+                                <option value="4" disabled>Fourth Character (Locked)</option>
+                                <option value="5" disabled>Fifth Character (Locked)</option>
+                                <option value="6" disabled>Sixth Character (Locked)</option>
+                                <option value="npc">NPC (Staff Only)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-narp-textMuted uppercase mb-2">Ninja Rank</label>
+                            <select id="ninja-rank" onchange="handleRulesUpdate()">
+                                <option value="" disabled selected>Select Rank...</option>
+                                <option value="genin">Genin</option>
+                                <option value="chunin">Chunin</option>
+                                <option value="special_jounin">Special Jounin</option>
+                                <option value="jounin">Jounin</option>
+                                <option value="civilian">Civilian</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-narp-textMuted uppercase mb-2">Village Affiliation</label>
+                            <select id="village">
+                                <option value="" disabled selected>Select Village...</option>
+                                <option value="konoha">Konohagakure</option>
+                                <option value="suna">Sunagakure</option>
+                                <option value="iwa">Iwagakure</option>
+                                <option value="kumo">Kumogakure</option>
+                                <option value="kiri">Kirigakure</option>
+                                <option value="wanderer">Wanderer</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-narp-textMuted uppercase mb-2">Bloodline</label>
+                            <select id="affiliation-type" onchange="handleAffiliationChange()">
+                                <option value="clanless" selected>Clanless</option>
+                                <option value="clan">Clan</option>
+                                <option value="kkg">KKG (Kekkei Genkai)</option>
+                            </select>
+                            <p id="clanless-notice" class="text-[10px] text-narp-cyan mt-1 hidden">* Clanless grants +1 Nature at Sp. Jounin+.</p>
+                        </div>
+
+                        <div id="origin-container" class="hidden">
+                            <label class="block text-xs font-semibold text-narp-textMuted uppercase mb-2">Origin</label>
+                            <select id="affiliation-origin" onchange="handleAffiliationChange()">
+                                <option value="canon" selected>Canon</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+
+                        <div id="selection-container" class="hidden">
+                            <label id="selection-label" class="block text-xs font-semibold text-narp-textMuted uppercase mb-2">Select Bloodline</label>
+                            <select id="affiliation-selection" onchange="handleRulesUpdate()">
+                                </select>
+                            <p id="puppet-notice" class="text-[10px] text-narp-cyan mt-1 hidden">* Puppet Catalogue tab will be generated.</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-narp-card border border-narp-border rounded-xl shadow-lg">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-bio', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="user" class="text-narp-cyan"></i> Personal Bio</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300"></i>
+                </button>
+                <div id="sec-bio" class="accordion-content px-6 pb-6 border-t border-narp-border/50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Character Name / Alias</label><input type="text" id="char-name" placeholder="Uzumaki Naruto"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Discord Username</label><input type="text" id="discord-username" placeholder="Username#1234"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Age</label><input type="number" id="age" placeholder="12"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Birthday</label><input type="text" id="birthday" placeholder="October 10"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Gender</label><input type="text" id="gender" placeholder="Male"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Blood Type</label><input type="text" id="blood-type" placeholder="B"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Economic Status</label><input type="text" id="economic-status" placeholder="Poor / Average / Wealthy"></div>
+                        <div>
+                            <label class="block text-xs text-narp-textMuted uppercase mb-1">Height (Ft / In)</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="h-ft" placeholder="Ft"><input type="number" id="h-in" placeholder="In">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-narp-textMuted uppercase mb-1">Weight (Lbs)</label>
+                            <input type="number" id="w-lbs" placeholder="Lbs" oninput="convertWeight('lbs')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="combat-section" class="bg-narp-card border border-narp-border rounded-xl shadow-lg">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-combat', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="swords" class="text-narp-cyan"></i> Stats & Skills</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300 transform rotate-180"></i>
+                </button>
+                <div id="sec-combat" class="accordion-content open px-6 pb-6 border-t border-narp-border/50">
+                    <div class="space-y-6">
+                        
+                        <div class="bg-narp-bg p-4 rounded-lg border border-narp-border flex justify-between items-center text-sm">
+                            <div>
+                                <span class="text-narp-textMuted block text-xs uppercase font-bold mb-1">Base Chakra (CU)</span>
+                                <span class="font-mono text-2xl text-narp-cyan font-bold" id="calc-cu">15</span>
+                                <span class="text-[10px] text-narp-textMuted ml-2 block" id="cu-formula">Formula...</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-narp-textMuted block text-xs uppercase font-bold mb-1">Threat Level</span>
+                                <span class="font-mono text-2xl text-narp-warning font-bold" id="calc-threat">D</span>
+                                <span class="text-[10px] text-narp-textMuted mr-2 block" id="threat-formula">Sum / 4</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="font-bold text-narp-cyan mb-1 border-b border-narp-border pb-1">Ninja Stats</h3>
+                                <p id="stat-limits-text" class="text-[10px] text-narp-textMuted mb-3 uppercase tracking-wider h-4"></p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center"><label class="text-sm w-1/3">Chakra Level</label><select id="stat-cl" class="stat-select w-2/3" onchange="handleStatChange()"><option value="1" selected>D Rank</option><option value="2">C Rank</option><option value="3">B Rank</option><option value="4">A Rank</option><option value="5">S Rank</option></select></div>
+                                    <div class="flex justify-between items-center"><label class="text-sm w-1/3">Chakra Control</label><select id="stat-cc" class="stat-select w-2/3" onchange="handleStatChange()"><option value="1" selected>D Rank</option><option value="2">C Rank</option><option value="3">B Rank</option><option value="4">A Rank</option><option value="5">S Rank</option></select></div>
+                                    <div class="flex justify-between items-center"><label class="text-sm w-1/3">Speed</label><select id="stat-spd" class="stat-select w-2/3" onchange="handleStatChange()"><option value="1" selected>D Rank</option><option value="2">C Rank</option><option value="3">B Rank</option><option value="4">A Rank</option><option value="5">S Rank</option></select></div>
+                                    <div class="flex justify-between items-center"><label class="text-sm w-1/3">Strength</label><select id="stat-str" class="stat-select w-2/3" onchange="handleStatChange()"><option value="1" selected>D Rank</option><option value="2">C Rank</option><option value="3">B Rank</option><option value="4">A Rank</option><option value="5">S Rank</option></select></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-narp-cyan mb-1 border-b border-narp-border pb-1">Ninja Skills</h3>
+                                <p id="skill-limits-text" class="text-[10px] text-narp-textMuted mb-3 uppercase tracking-wider h-4"></p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label class="text-xs text-narp-textMuted">Ninjutsu</label><select class="skill-select" onchange="handleSkillChange()"></select></div>
+                                    <div><label class="text-xs text-narp-textMuted">Taijutsu</label><select class="skill-select" onchange="handleSkillChange()"></select></div>
+                                    <div><label class="text-xs text-narp-textMuted">Genjutsu</label><select class="skill-select" onchange="handleSkillChange()"></select></div>
+                                    <div><label class="text-xs text-narp-textMuted">Fuinjutsu</label><select class="skill-select" onchange="handleSkillChange()"></select></div>
+                                    <div><label class="text-xs text-narp-textMuted">Bukijutsu</label><select class="skill-select" onchange="handleSkillChange()"></select></div>
+                                    <div><label class="text-xs text-narp-textMuted">Medical</label><select class="skill-select" onchange="handleSkillChange()"></select></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="abilities-section" class="bg-narp-card border border-narp-border rounded-xl shadow-lg">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-abilities', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="zap" class="text-narp-cyan"></i> Abilities & Jutsu</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300"></i>
+                </button>
+                <div id="sec-abilities" class="accordion-content px-6 pb-6 border-t border-narp-border/50">
+                    <div class="space-y-6">
+                        
+                        <div>
+                            <div class="flex justify-between items-end mb-2 border-b border-narp-border pb-1">
+                                <h3 class="font-bold text-lg">Chakra Natures</h3>
+                                <span id="nature-limits" class="text-xs text-narp-warning font-mono">Allowed: 0</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="nature-checkboxes">
+                                <label class="flex items-center space-x-2 text-sm"><input type="checkbox" value="Fire" class="rounded border-narp-border text-narp-cyan focus:ring-narp-cyan" onchange="handleNatures()"><span>Fire</span></label>
+                                <label class="flex items-center space-x-2 text-sm"><input type="checkbox" value="Wind" class="rounded border-narp-border text-narp-cyan focus:ring-narp-cyan" onchange="handleNatures()"><span>Wind</span></label>
+                                <label class="flex items-center space-x-2 text-sm"><input type="checkbox" value="Lightning" class="rounded border-narp-border text-narp-cyan focus:ring-narp-cyan" onchange="handleNatures()"><span>Lightning</span></label>
+                                <label class="flex items-center space-x-2 text-sm"><input type="checkbox" value="Earth" class="rounded border-narp-border text-narp-cyan focus:ring-narp-cyan" onchange="handleNatures()"><span>Earth</span></label>
+                                <label class="flex items-center space-x-2 text-sm"><input type="checkbox" value="Water" class="rounded border-narp-border text-narp-cyan focus:ring-narp-cyan" onchange="handleNatures()"><span>Water</span></label>
+                                <label class="flex items-center space-x-2 text-sm"><input type="checkbox" value="Yin" class="rounded border-narp-border text-narp-cyan focus:ring-narp-cyan" onchange="handleNatures()"><span>Yin</span></label>
+                                <label class="flex items-center space-x-2 text-sm"><input type="checkbox" value="Yang" class="rounded border-narp-border text-narp-cyan focus:ring-narp-cyan" onchange="handleNatures()"><span>Yang</span></label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-lg mb-3 border-b border-narp-border pb-2">Battle Modes</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-xs text-narp-textMuted uppercase block mb-2">Secondary Battle Mode (Max 2 - C Rank)</label>
+                                    <div class="space-y-2">
+                                        <div class="flex gap-2">
+                                            <input type="text" placeholder="BM Name (Optional)" class="w-1/2 text-sm">
+                                            <input type="text" placeholder="Doc Link" class="w-1/2 text-sm">
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <input type="text" placeholder="BM Name (Optional)" class="w-1/2 text-sm">
+                                            <input type="text" placeholder="Doc Link" class="w-1/2 text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="bm-minor">
+                                    <label class="text-xs text-narp-textMuted uppercase block mb-2">Minor Battle Mode (Max 1 - B Rank)</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" placeholder="BM Name (Optional)" class="w-1/2 text-sm">
+                                        <input type="text" placeholder="Doc Link" class="w-1/2 text-sm">
+                                    </div>
+                                </div>
+                                <div id="bm-major">
+                                    <label class="text-xs text-narp-textMuted uppercase block mb-2">Major Battle Mode (Max 1 - A Rank)</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" placeholder="BM Name (Optional)" class="w-1/2 text-sm">
+                                        <input type="text" placeholder="Doc Link" class="w-1/2 text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-end mb-3 border-b border-narp-border pb-2">
+                                <div>
+                                    <h3 class="font-bold text-lg">Jutsu List</h3>
+                                    <p id="jutsu-limits-text" class="text-[10px] text-narp-warning uppercase tracking-wider"></p>
+                                </div>
+                                <span id="jutsu-counter" class="text-xs text-narp-textMuted font-mono bg-narp-bg px-2 py-1 rounded">0 / 0</span>
+                            </div>
+                            
+                            <div id="jutsu-container" class="space-y-2">
+                                </div>
+                            
+                            <button type="button" onclick="addJutsuRow()" id="add-jutsu-btn" class="mt-4 w-full py-3 border-2 border-dashed border-narp-border rounded-lg text-narp-textMuted hover:text-narp-cyan hover:border-narp-cyan transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Add Jutsu Slot
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-narp-card border border-narp-border rounded-xl shadow-lg">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-lore', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="scroll" class="text-narp-cyan"></i> Lore & Background</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300"></i>
+                </button>
+                <div id="sec-lore" class="accordion-content px-6 pb-6 border-t border-narp-border/50 space-y-6">
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-narp-cyan mb-2">Personality</label>
+                        <p id="personality-prompt" class="text-xs text-narp-warning mb-2 hidden">[For any OC above Chunin rank, describe the following: How did they grow up? How were they in the Academy Socially? How do people see them? How do they interact with family, strangers, friends, enemies? How do they act when they are on duty versus home, or even alone versus in public? Flaws? Multiple personalities? ]</p>
+                        <textarea rows="3" placeholder="Describe their personality..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-narp-cyan mb-2">Personal Goals</label>
+                        <p class="text-xs text-narp-textMuted mb-2">[What drives them? How many goals? What do they expect to accomplish by reaching their goal?]</p>
+                        <textarea rows="2" placeholder="Their dreams and aspirations..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-narp-cyan mb-2 flex justify-between">
+                            Backstory
+                            <span id="bg-req" class="text-xs font-normal text-narp-textMuted">Min: 1 Paragraph</span>
+                        </label>
+                        <div class="space-y-4">
+                            <div id="bg-para-1">
+                                <p class="text-xs text-narp-warning mb-1">[Paragraph 1: Early life, academy days, and graduation.]</p>
+                                <textarea rows="3" placeholder="Write their early life here..."></textarea>
+                            </div>
+                            <div id="bg-para-2" class="hidden">
+                                <p class="text-xs text-narp-warning mb-1">[Paragraph 2: How did they get promoted to Chunin? Impactful changes? Friends made/lost?]</p>
+                                <textarea rows="3" placeholder="Chunin promotion history..."></textarea>
+                            </div>
+                            <div id="bg-para-3" class="hidden">
+                                <p class="text-xs text-narp-warning mb-1">[Paragraph 3: How did they get promoted to Special Jounin? Did they mature? Major events?]</p>
+                                <textarea rows="3" placeholder="Special Jounin promotion history..."></textarea>
+                            </div>
+                            <div id="bg-para-4" class="hidden">
+                                <p class="text-xs text-narp-warning mb-1">[Paragraph 4: How did they get promoted to Jounin? Impactful changes over time?]</p>
+                                <textarea rows="3" placeholder="Jounin promotion history..."></textarea>
+                            </div>
+                            <div id="bg-para-civ" class="hidden">
+                                <p class="text-xs text-narp-warning mb-1">[Free form. Write whatever you wish.]</p>
+                                <textarea rows="6" placeholder="Civilian backstory..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-narp-card border border-narp-border rounded-xl shadow-lg">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-extras', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="more-horizontal" class="text-narp-cyan"></i> Optional Extras</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300"></i>
+                </button>
+                <div id="sec-extras" class="accordion-content px-6 pb-6 border-t border-narp-border/50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Favorite Foods</label><input type="text"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Favorite Colors</label><input type="text"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Hobbies</label><input type="text"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Likes</label><input type="text"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Dislikes</label><input type="text"></div>
+                        <div><label class="block text-xs text-narp-textMuted uppercase mb-1">Beliefs/Religions</label><input type="text"></div>
+                        <div class="md:col-span-2"><label class="block text-xs text-narp-textMuted uppercase mb-1">Special Locations</label><input type="text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-narp-card border border-narp-border rounded-xl shadow-lg">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-appearance', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="image" class="text-narp-cyan"></i> Appearance</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300"></i>
+                </button>
+                <div id="sec-appearance" class="accordion-content px-6 pb-6 border-t border-narp-border/50">
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-end mb-3 border-b border-narp-border pb-2">
+                                <h3 class="font-bold text-sm text-narp-cyan">Character References (Max 3)</h3>
+                                <span id="image-counter" class="text-xs text-narp-textMuted">0 / 3 Uploaded</span>
+                            </div>
+                            
+                            <div id="upload-area" class="border-2 border-dashed border-narp-border rounded-lg p-6 text-center hover:border-narp-cyan hover:bg-narp-cyan/5 transition-colors cursor-pointer" onclick="document.getElementById('image-upload').click()">
+                                <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-narp-textMuted mb-2"></i>
+                                <p class="text-sm text-narp-textMuted">Click to browse or drag and drop images here</p>
+                                <p class="text-[10px] text-narp-warning mt-1">JPEG, PNG, WEBP allowed.</p>
+                                <input type="file" id="image-upload" accept="image/jpeg, image/png, image/webp" class="hidden" multiple onchange="handleImageUpload(event)">
+                            </div>
+                            <p id="image-error" class="text-xs text-narp-error hidden mt-2"></p>
+
+                            <div id="image-preview-container" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sec-puppet-wrapper" class="bg-narp-card border border-narp-border rounded-xl shadow-lg hidden">
+                <button type="button" class="w-full flex items-center justify-between p-6 focus:outline-none" onclick="toggleAccordion('sec-puppet', this)">
+                    <h2 class="font-bold text-xl flex items-center gap-2"><i data-lucide="bot" class="text-narp-cyan"></i> Puppet Catalogue</h2>
+                    <i data-lucide="chevron-down" class="chevron-icon transition-transform duration-300"></i>
+                </button>
+                <div id="sec-puppet" class="accordion-content px-6 pb-6 border-t border-narp-border/50">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-end mb-3 border-b border-narp-border pb-2">
+                            <h3 class="font-bold text-sm text-narp-cyan">Puppet Roster (Max 30)</h3>
+                            <span id="puppet-counter" class="text-xs text-narp-textMuted">0 / 30</span>
+                        </div>
+                        <div id="puppet-container" class="space-y-4">
+                            </div>
+                        <button type="button" onclick="addPuppetRow()" id="add-puppet-btn" class="mt-4 w-full py-3 border-2 border-dashed border-narp-border rounded-lg text-narp-textMuted hover:text-narp-cyan hover:border-narp-cyan transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Add Puppet Slot
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center pb-12">
+                <button type="button" id="generate-btn" onclick="generateCharacterSheet()" class="bg-narp-cyan text-narp-bg font-bold py-4 px-8 rounded-xl text-lg hover:bg-opacity-90 transition-all shadow-lg shadow-narp-cyan/20 w-full md:w-auto min-w-[300px]">
+                    Generate Character Sheet
+                </button>
+                <p id="generate-status" class="mt-3 text-sm hidden"></p>
+            </div>
+
+        </form>
+    </main>
+
+    <script>
+        // PASTE YOUR GOOGLE WEB APP URL HERE:
+        const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwoLRirNbyp59R5UpnKrtahXaV35j2vpFOC8sQi9Aphp3OeaCsf1bmbEasbnILMXjDPQg/exec";
+
+        lucide.createIcons();
+
+        // Data & Logic Rules
+        const rankRules = {
+            'genin': { statMax: 1, statHigh: 0, statBase: 1, skillMax: 20, skillHigh: 0, skillBase: 20, maxNatures: 1, maxJutsu: 5, maxJRank: 'B', bmMinor: true, bmMajor: false, bgParas: 1, prompt: "" },
+            'chunin': { statMax: 2, statHigh: 2, statBase: 1, skillMax: 40, skillHigh: 3, skillBase: 20, maxNatures: 2, maxJutsu: 10, maxJRank: 'A', bmMinor: true, bmMajor: false, bgParas: 2, prompt: "Paragraph 2: How did they get promoted to Chunin? Impactful changes? Friends made/lost?" },
+            'special_jounin': { statMax: 3, statHigh: 2, statBase: 2, skillMax: 50, skillHigh: 3, skillBase: 40, maxNatures: 2, maxJutsu: 15, maxJRank: 'A', bmMinor: true, bmMajor: true, bgParas: 3, prompt: "Paragraph 3: How did they get promoted to Special Jounin? Did they mature? Major events?" },
+            'jounin': { statMax: 4, statHigh: 2, statBase: 3, skillMax: 60, skillHigh: 3, skillBase: 50, maxNatures: 3, maxJutsu: 20, maxJRank: 'S', bmMinor: true, bmMajor: true, bgParas: 4, prompt: "Paragraph 4: How did they get promoted to Jounin? Impactful changes over time?" },
+            'civilian': { statMax: 1, statHigh: 0, statBase: 1, skillMax: 0, skillHigh: 0, skillBase: 0, maxNatures: 0, maxJutsu: 0, maxJRank: 'D', bmMinor: false, bmMajor: false, bgParas: 0, prompt: "Free form. Write whatever you wish." }
+        };
+
+        const affiliationData = {
+            clan: {
+                canon: ["Aburame Clan", "Akimichi Clan", "Amagiri Clan", "Haruno Clan", "Hatake Clan", "Hirasaka Clan", "Hoshigaki Clan", "Hozuki Clan", "Hyuga Clan", "Iburi Clan", "Inuzuka Clan", "Izuno Clan", "Jugo Clan", "Kaguya Clan", "Kamizuru Clan", "Kawakami Clan", "Kazekage Clan", "Kedōin Clan", "Lee Clan", "Namikaze Clan", "Nara Clan", "Sarutobi Clan", "Senju Clan", "Tsuchigumo Clan", "Uchiha Clan", "Uzumaki Clan", "Yamanaka Clan", "Yuki Clan"],
+                custom: ["Himura Clan", "Puppet Clan", "Shichiten Clan", "Shimura Clan"]
+            },
+            kkg: {
+                canon: ["Boil KKG", "Crystal KKG", "Dark KKG", "Explosion KKG", "Lava KKG", "Paper KKG", "Sakon/Ukon KKG", "Scorch KKG", "Steel KKG", "Swift KKG", "Typhoon KKG"],
+                custom: ["Myohojutsu KKG"]
+            }
+        };
+
+        const statValues = { 1: { l: 'D', v: 5, t: 1 }, 2: { l: 'C', v: 10, t: 2 }, 3: { l: 'B', v: 15, t: 3 }, 4: { l: 'A', v: 20, t: 4 }, 5: { l: 'S', v: 25, t: 5 } };
+        
+        let activeJutsuCount = 0;
+        let activePuppetCount = 0;
+        const MAX_PUPPETS = 30;
+        let uploadedImages = [];
+        const MAX_IMAGES = 3;
+
+        // UI Interactions
+        function toggleAccordion(id, btn) {
+            const content = document.getElementById(id);
+            const icon = btn.querySelector('.chevron-icon');
+            content.classList.toggle('open');
+            icon.classList.toggle('rotate-180');
+        }
+
+        function convertWeight(source) {
+            const kg = document.getElementById('w-kg');
+            const lbs = document.getElementById('w-lbs');
+            if (source === 'kg' && kg && kg.value) {
+                if(lbs) lbs.value = Math.round(parseFloat(kg.value) * 2.20462);
+            } else if (source === 'lbs' && lbs && lbs.value) {
+                if(kg) kg.value = Math.round(parseFloat(lbs.value) / 2.20462);
+            }
+        }
+
+        // Affiliation Selection Handler
+        function handleAffiliationChange() {
+            const type = document.getElementById('affiliation-type').value;
+            const originContainer = document.getElementById('origin-container');
+            const selectionContainer = document.getElementById('selection-container');
+            const origin = document.getElementById('affiliation-origin').value;
+            const selectionSelect = document.getElementById('affiliation-selection');
+            const selectionLabel = document.getElementById('selection-label');
+
+            if (type === 'clanless') {
+                originContainer.classList.add('hidden');
+                selectionContainer.classList.add('hidden');
+                selectionSelect.innerHTML = '<option value="clanless">Clanless</option>';
+            } else {
+                originContainer.classList.remove('hidden');
+                selectionContainer.classList.remove('hidden');
+                selectionLabel.innerText = type === 'clan' ? 'Select Clan' : 'Select KKG';
+                
+                const options = affiliationData[type][origin];
+                selectionSelect.innerHTML = '<option value="" disabled selected>Select Bloodline...</option>' + 
+                    options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+            }
+            handleRulesUpdate();
+        }
+
+        // Master Rule Updater
+        function handleRulesUpdate() {
+            const rank = document.getElementById('ninja-rank').value;
+            const type = document.getElementById('affiliation-type').value;
+            const selection = document.getElementById('affiliation-selection').value || 'clanless';
+            const clan = type === 'clanless' ? 'clanless' : selection;
+            
+            if (!rank) return;
+
+            const rules = rankRules[rank];
+            const isCiv = rank === 'civilian';
+
+            document.getElementById('combat-section').style.display = isCiv ? 'none' : 'block';
+            document.getElementById('abilities-section').style.display = isCiv ? 'none' : 'block';
+
+            document.getElementById('clanless-notice').style.display = clan === 'clanless' ? 'block' : 'none';
+            document.getElementById('puppet-notice').style.display = clan === 'Puppet Clan' ? 'block' : 'none';
+
+            const puppetWrapper = document.getElementById('sec-puppet-wrapper');
+            if (puppetWrapper) {
+                if (clan === 'Puppet Clan') {
+                    puppetWrapper.classList.remove('hidden');
+                } else {
+                    puppetWrapper.classList.add('hidden');
+                }
+            }
+
+            if (!isCiv) {
+                const letterRanks = {1: 'D', 2: 'C', 3: 'B', 4: 'A', 5: 'S'};
+                document.getElementById('stat-limits-text').innerText = rules.statHigh > 0 
+                    ? `Max: ${rules.statHigh} at ${letterRanks[rules.statMax]}, rest at ${letterRanks[rules.statBase]} or lower`
+                    : `Max: All at ${letterRanks[rules.statMax]} or lower`;
+                
+                document.getElementById('skill-limits-text').innerText = rules.skillHigh > 0
+                    ? `Max: ${rules.skillHigh} at ${rules.skillMax}%, rest at ${rules.skillBase}% or lower`
+                    : `Max: All at ${rules.skillMax}% or lower`;
+
+                handleStatChange();
+                handleSkillChange();
+                
+                let allowedNatures = rules.maxNatures;
+                if (clan === 'clanless' && (rank === 'special_jounin' || rank === 'jounin')) allowedNatures += 1;
+                document.getElementById('nature-limits').innerText = `Allowed: ${allowedNatures}`;
+                document.getElementById('nature-checkboxes').dataset.max = allowedNatures;
+                handleNatures();
+
+                document.getElementById('bm-minor').style.display = rules.bmMinor ? 'block' : 'none';
+                document.getElementById('bm-major').style.display = rules.bmMajor ? 'block' : 'none';
+
+                document.getElementById('jutsu-limits-text').innerText = `Max Jutsu: ${rules.maxJutsu} | Max Rank: ${rules.maxJRank}`;
+                document.getElementById('jutsu-counter').innerText = `${activeJutsuCount} / ${rules.maxJutsu}`;
+                document.getElementById('add-jutsu-btn').style.display = activeJutsuCount >= rules.maxJutsu ? 'none' : 'flex';
+                updateExistingJutsuDropdowns(rules.maxJRank);
+            }
+
+            document.getElementById('personality-prompt').style.display = (rank === 'special_jounin' || rank === 'jounin') ? 'block' : 'none';
+            document.getElementById('bg-req').innerText = isCiv ? 'Free Form' : `Min: ${rules.bgParas} Paragraph(s)`;
+            
+            document.getElementById('bg-para-civ').style.display = isCiv ? 'block' : 'none';
+            document.getElementById('bg-para-1').style.display = (!isCiv && rules.bgParas >= 1) ? 'block' : 'none';
+            document.getElementById('bg-para-2').style.display = (!isCiv && rules.bgParas >= 2) ? 'block' : 'none';
+            document.getElementById('bg-para-3').style.display = (!isCiv && rules.bgParas >= 3) ? 'block' : 'none';
+            document.getElementById('bg-para-4').style.display = (!isCiv && rules.bgParas >= 4) ? 'block' : 'none';
+        }
+
+        // Stats & Math Logic
+        function handleStatChange() {
+            const rank = document.getElementById('ninja-rank').value;
+            if(!rank) return;
+            const rules = rankRules[rank];
+            const selects = document.querySelectorAll('.stat-select');
+
+            let highCount = 0;
+            selects.forEach(sel => { if (parseInt(sel.value) > rules.statBase) highCount++; });
+
+            if (highCount > rules.statHigh) {
+                 let overage = highCount - rules.statHigh;
+                 selects.forEach(sel => {
+                     if (overage > 0 && parseInt(sel.value) > rules.statBase) {
+                         sel.value = rules.statBase;
+                         overage--;
+                     }
+                 });
+                 highCount = rules.statHigh;
+            }
+
+            selects.forEach(sel => {
+                const currentVal = parseInt(sel.value);
+                const isHigh = currentVal > rules.statBase;
+                const canBeHigh = isHigh || (highCount < rules.statHigh);
+                const maxAllowed = canBeHigh ? rules.statMax : rules.statBase;
+
+                Array.from(sel.options).forEach(opt => {
+                    const val = parseInt(opt.value);
+                    opt.disabled = val > maxAllowed;
+                    opt.style.display = val > maxAllowed ? 'none' : 'block';
+                });
+                if (parseInt(sel.value) > maxAllowed) sel.value = maxAllowed;
+            });
+
+            calculateCombatStats();
+        }
+
+        function calculateCombatStats() {
+            const cl = parseInt(document.getElementById('stat-cl').value);
+            const cc = parseInt(document.getElementById('stat-cc').value);
+            const spd = parseInt(document.getElementById('stat-spd').value);
+            const str = parseInt(document.getElementById('stat-str').value);
+
+            const rank = document.getElementById('ninja-rank').value;
+            const type = document.getElementById('affiliation-type').value;
+            const clan = type === 'clanless' ? 'clanless' : (document.getElementById('affiliation-selection').value || 'clanless');
+
+            const clVal = statValues[cl].v;
+            const ccVal = statValues[cc].v;
+            let totalCU = clVal + ccVal + 5;
+            let formulaStr = `Level(${clVal}) + Control(${ccVal}) + Base(5)`;
+
+            if (clan === 'Uzumaki Clan') {
+                let bonus = 0;
+                if (rank === 'genin') bonus = 5;
+                else if (rank === 'chunin') bonus = 10;
+                else if (rank === 'special_jounin') bonus = 15;
+                else if (rank === 'jounin') bonus = 20;
+                
+                if (bonus > 0) {
+                    totalCU += bonus;
+                    formulaStr += ` + Uzumaki(${bonus})`;
+                }
+            }
+
+            if (clan === 'Aburame Clan' || clan === 'Kamizuru Clan') {
+                totalCU = Math.round(totalCU / 3);
+                formulaStr = `(${formulaStr}) / 3`;
+            }
+            
+            document.getElementById('calc-cu').innerText = totalCU;
+            document.getElementById('cu-formula').innerText = formulaStr;
+
+            const sum = statValues[cl].t + statValues[cc].t + statValues[spd].t + statValues[str].t;
+            const avg = sum / 4;
+            
+            let threatRank = 'D';
+            if (avg >= 4.5) threatRank = 'S';
+            else if (avg >= 3.5) threatRank = 'A';
+            else if (avg >= 2.5) threatRank = 'B';
+            else if (avg >= 1.5) threatRank = 'C';
+
+            document.getElementById('calc-threat').innerText = threatRank;
+            document.getElementById('threat-formula').innerText = `Sum(${sum}) / 4 = ${avg.toFixed(1)}`;
+        }
+
+        // Skills Logic
+        function initSkillDropdowns() {
+            const optionsHTML = Array.from({length: 11}, (_, i) => i * 10)
+                .map(val => `<option value="${val}">${val}%</option>`).join('');
+            document.querySelectorAll('.skill-select').forEach(sel => sel.innerHTML = optionsHTML);
+        }
+
+        function handleSkillChange() {
+            const rank = document.getElementById('ninja-rank').value;
+            if(!rank) return;
+            const rules = rankRules[rank];
+            const selects = document.querySelectorAll('.skill-select');
+
+            let highCount = 0;
+            selects.forEach(sel => { if (parseInt(sel.value) > rules.skillBase) highCount++; });
+
+            if (highCount > rules.skillHigh) {
+                 let overage = highCount - rules.skillHigh;
+                 selects.forEach(sel => {
+                     if (overage > 0 && parseInt(sel.value) > rules.skillBase) {
+                         sel.value = rules.skillBase;
+                         overage--;
+                     }
+                 });
+                 highCount = rules.skillHigh;
+            }
+
+            selects.forEach(sel => {
+                const currentVal = parseInt(sel.value);
+                const isHigh = currentVal > rules.skillBase;
+                const canBeHigh = isHigh || (highCount < rules.skillHigh);
+                const maxAllowed = canBeHigh ? rules.skillMax : rules.skillBase;
+
+                Array.from(sel.options).forEach(opt => {
+                    const val = parseInt(opt.value);
+                    opt.disabled = val > maxAllowed;
+                    opt.style.display = val > maxAllowed ? 'none' : 'block';
+                });
+                if (parseInt(sel.value) > maxAllowed) sel.value = maxAllowed;
+            });
+        }
+
+        // Natures Handler
+        function handleNatures() {
+            const container = document.getElementById('nature-checkboxes');
+            const max = parseInt(container.dataset.max || 0);
+            const boxes = container.querySelectorAll('input[type="checkbox"]');
+            let checkedBoxes = [];
+            
+            boxes.forEach(b => { if (b.checked) checkedBoxes.push(b); });
+            
+            while (checkedBoxes.length > max) {
+                const excessBox = checkedBoxes.pop();
+                excessBox.checked = false;
+            }
+            
+            boxes.forEach(b => {
+                if (!b.checked) b.disabled = checkedBoxes.length >= max;
+            });
+
+            updateJutsuNatureOptions();
+        }
+
+        // Jutsu Logic
+        function addJutsuRow() {
+            const rank = document.getElementById('ninja-rank').value;
+            if (!rank) return alert("Select a Ninja Rank first!");
+            const rules = rankRules[rank];
+            
+            if (activeJutsuCount >= rules.maxJutsu) return;
+            activeJutsuCount++;
+
+            const div = document.createElement('div');
+            div.className = "bg-narp-bg p-3 rounded border border-narp-border flex flex-col md:flex-row gap-2 relative";
+            div.id = `jutsu-${Date.now()}`;
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-2 flex-1">
+                    <span class="jutsu-number font-mono font-bold text-narp-cyan w-5 text-right"></span>
+                    <input type="text" placeholder="Jutsu Name" class="text-sm w-full">
+                </div>
+                <div class="w-full md:w-24">
+                    <select class="jutsu-rank-sel text-sm">
+                        <option value="D">D Rank</option>
+                        <option value="C">C Rank</option>
+                        <option value="B">B Rank</option>
+                        <option value="A">A Rank</option>
+                        <option value="S">S Rank</option>
+                    </select>
+                </div>
+                <div class="w-full md:w-32"><select class="jutsu-nature-sel text-sm"><option value="">No Nature</option></select></div>
+                <div class="w-full md:w-24"><select class="text-sm"><option value="" disabled selected>DB Appr?</option><option>DB: Yes</option><option>DB: No</option></select></div>
+                <div class="flex-1"><input type="text" placeholder="Doc Link" class="text-sm"></div>
+                <button type="button" onclick="this.parentElement.remove(); activeJutsuCount--; updateJutsuNumbers(); handleRulesUpdate();" class="text-narp-error p-2 hover:bg-narp-error/10 rounded transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            `;
+            
+            document.getElementById('jutsu-container').appendChild(div);
+            lucide.createIcons();
+            
+            updateJutsuNumbers();
+            updateExistingJutsuDropdowns(rules.maxJRank);
+            updateJutsuNatureOptions();
+            handleRulesUpdate();
+        }
+
+        function updateJutsuNumbers() {
+            const rows = document.querySelectorAll('#jutsu-container > div');
+            rows.forEach((row, index) => {
+                const numSpan = row.querySelector('.jutsu-number');
+                if (numSpan) numSpan.textContent = `${index + 1}.`;
+            });
+        }
+
+        function updateExistingJutsuDropdowns(maxRankChar) {
+            const rankOrder = ['D', 'C', 'B', 'A', 'S'];
+            const maxIndex = rankOrder.indexOf(maxRankChar);
+            
+            document.querySelectorAll('.jutsu-rank-sel').forEach(sel => {
+                Array.from(sel.options).forEach(opt => {
+                    const optIndex = rankOrder.indexOf(opt.value);
+                    opt.disabled = optIndex > maxIndex;
+                    opt.style.display = optIndex > maxIndex ? 'none' : 'block';
+                });
+                if (rankOrder.indexOf(sel.value) > maxIndex) sel.value = maxRankChar;
+            });
+        }
+
+        function updateJutsuNatureOptions() {
+            const checkedNatures = Array.from(document.querySelectorAll('#nature-checkboxes input:checked')).map(cb => cb.value);
+            const optionsHTML = '<option value="">No Nature</option>' + checkedNatures.map(n => `<option value="${n}">${n}</option>`).join('');
+            
+            document.querySelectorAll('.jutsu-nature-sel').forEach(sel => {
+                const currentVal = sel.value;
+                sel.innerHTML = optionsHTML;
+                if (checkedNatures.includes(currentVal)) sel.value = currentVal;
+            });
+        }
+
+        // Puppet Logic
+        function addPuppetRow() {
+            if (activePuppetCount >= MAX_PUPPETS) return;
+            activePuppetCount++;
+
+            const div = document.createElement('div');
+            div.className = "bg-narp-bg p-3 rounded border border-narp-border flex flex-col gap-3 relative";
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="puppet-number font-mono font-bold text-narp-cyan w-6 text-right"></span>
+                    <input type="text" placeholder="Puppet Name" class="text-sm flex-1 font-bold">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                    <div>
+                        <label class="text-[10px] text-narp-textMuted uppercase mb-1 block">Class</label>
+                        <select class="puppet-class-sel text-sm" onchange="handlePuppetClassChange(this)">
+                            <option value="" disabled selected>Select Class...</option>
+                            <option value="Armor">Armor</option>
+                            <option value="Cluster">Cluster</option>
+                            <option value="Defense">Defense</option>
+                            <option value="Fighter">Fighter</option>
+                            <option value="Human Puppet">Human Puppet</option>
+                            <option value="Hybrid">Hybrid</option>
+                            <option value="Ranged">Ranged</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-narp-textMuted uppercase mb-1 block">Size</label>
+                        <select class="puppet-size-sel text-sm">
+                            <option value="" disabled selected>Size...</option>
+                            <option value="Small">Small (Cluster)</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Large">Large</option>
+                            <option value="Very Large">Very Large (Armor)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-narp-textMuted uppercase mb-1 block">Attuned Nature</label>
+                        <select class="text-sm">
+                            <option value="N/A">N/A</option>
+                            <option value="Fire">Fire</option>
+                            <option value="Water">Water</option>
+                            <option value="Earth">Earth</option>
+                            <option value="Wind">Wind</option>
+                            <option value="Lightning">Lightning</option>
+                            <option value="Sound">Sound</option>
+                            <option value="Medical Ninjutsu">Medical Ninjutsu</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-narp-textMuted uppercase mb-1 block">Doc Link</label>
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="URL" class="text-sm flex-1">
+                            <button type="button" onclick="this.closest('.bg-narp-bg').remove(); activePuppetCount--; updatePuppetNumbers();" class="text-narp-error p-2 hover:bg-narp-error/10 rounded transition-colors" title="Remove Puppet"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('puppet-container').appendChild(div);
+            lucide.createIcons();
+            updatePuppetNumbers();
+        }
+
+        function updatePuppetNumbers() {
+            const rows = document.querySelectorAll('#puppet-container > div');
+            rows.forEach((row, index) => {
+                const numSpan = row.querySelector('.puppet-number');
+                if (numSpan) numSpan.textContent = `${index + 1}.`;
+            });
+            document.getElementById('puppet-counter').innerText = `${activePuppetCount} / ${MAX_PUPPETS}`;
+            document.getElementById('add-puppet-btn').style.display = activePuppetCount >= MAX_PUPPETS ? 'none' : 'flex';
+        }
+
+        function handlePuppetClassChange(selectElement) {
+            const sizeSelect = selectElement.closest('.bg-narp-bg').querySelector('.puppet-size-sel');
+            const pClass = selectElement.value;
+            
+            Array.from(sizeSelect.options).forEach(opt => {
+                opt.disabled = false;
+                opt.style.display = 'block';
+            });
+
+            if (pClass === 'Cluster') {
+                sizeSelect.value = 'Small';
+                Array.from(sizeSelect.options).forEach(opt => { 
+                    if(opt.value !== 'Small') { opt.disabled = true; opt.style.display = 'none'; } 
+                });
+            } else if (pClass === 'Armor') {
+                sizeSelect.value = 'Very Large';
+                Array.from(sizeSelect.options).forEach(opt => { 
+                    if(opt.value !== 'Very Large') { opt.disabled = true; opt.style.display = 'none'; } 
+                });
+            } else {
+                if (sizeSelect.value === 'Small' || sizeSelect.value === 'Very Large' || !sizeSelect.value) {
+                    sizeSelect.value = 'Medium';
+                }
+                Array.from(sizeSelect.options).forEach(opt => { 
+                    if(opt.value === 'Small' || opt.value === 'Very Large') { 
+                        opt.disabled = true; 
+                        opt.style.display = 'none'; 
+                    } 
+                });
+            }
+        }
+
+        // Image Upload Logic
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            const errorMsg = document.getElementById('image-error');
+            errorMsg.classList.add('hidden');
+
+            if (uploadedImages.length + files.length > MAX_IMAGES) {
+                errorMsg.textContent = `* You can only upload a maximum of ${MAX_IMAGES} images.`;
+                errorMsg.classList.remove('hidden');
+            }
+
+            const allowedFiles = files.slice(0, MAX_IMAGES - uploadedImages.length);
+
+            allowedFiles.forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImages.push({
+                        name: file.name,
+                        dataUrl: e.target.result
+                    });
+                    renderImagePreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
+        }
+
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            renderImagePreviews();
+        }
+
+        function renderImagePreviews() {
+            const container = document.getElementById('image-preview-container');
+            const counter = document.getElementById('image-counter');
+            const uploadArea = document.getElementById('upload-area');
+            
+            container.innerHTML = '';
+            
+            uploadedImages.forEach((img, index) => {
+                const div = document.createElement('div');
+                div.className = "relative rounded-lg overflow-hidden border border-narp-border group bg-narp-bg aspect-square shadow-md";
+                div.innerHTML = `
+                    <img src="${img.dataUrl}" alt="Preview" class="w-full h-full object-cover">
+                    <button type="button" onclick="removeImage(${index})" class="absolute top-2 right-2 bg-narp-error/90 text-white p-1.5 rounded hover:bg-red-600 transition-colors shadow-lg">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+
+            lucide.createIcons();
+            counter.innerText = `${uploadedImages.length} / ${MAX_IMAGES} Uploaded`;
+            
+            if (uploadedImages.length >= MAX_IMAGES) {
+                uploadArea.style.display = 'none';
+            } else {
+                uploadArea.style.display = 'block';
+            }
+        }
+
+        // ==========================================
+        // FETCH LOGIC (Generate Character)
+        // ==========================================
+        async function generateCharacterSheet() {
+            const btn = document.getElementById('generate-btn');
+            const statusText = document.getElementById('generate-status');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin inline-block mr-2"></i> Generating Docs... Please wait.';
+            lucide.createIcons();
+            statusText.className = "mt-3 text-sm text-narp-warning block";
+            statusText.innerText = "Connecting to Google Drive. This may take 10-15 seconds...";
+
+            try {
+                const heightFt = document.getElementById('h-ft')?.value;
+                const heightIn = document.getElementById('h-in')?.value;
+                const heightStr = (heightFt && heightIn) ? `${heightFt}'${heightIn}"` : '';
+
+                const weightLbs = document.getElementById('w-lbs')?.value;
+                const weightStr = weightLbs ? `${weightLbs} lbs` : '';
+
+                const payload = {
+                    discordUsername: document.getElementById('discord-username')?.value || '',
+                    characterSlot: document.getElementById('char-slot')?.value || '',
+                    alias: document.getElementById('char-name')?.value || '',
+                    ninjaRank: document.getElementById('ninja-rank')?.value || '',
+                    village: document.getElementById('village')?.value || '',
+                    bloodline: document.getElementById('affiliation-selection')?.value || 'Clanless',
+                    economicStatus: document.getElementById('economic-status')?.value || '',
+                    
+                    age: document.getElementById('age')?.value || '',
+                    birthday: document.getElementById('birthday')?.value || '',
+                    gender: document.getElementById('gender')?.value || '',
+                    bloodType: document.getElementById('blood-type')?.value || '',
+                    height: heightStr,
+                    weight: weightStr,
+                    
+                    personality: document.querySelector('textarea[placeholder="Describe their personality..."]')?.value || '',
+                    goals: document.querySelector('textarea[placeholder="Their dreams and aspirations..."]')?.value || '',
+                    
+                    baseCU: "5",
+                    extraCU: (parseInt(document.getElementById('calc-cu').innerText) - (statValues[document.getElementById('stat-cl').value].v + statValues[document.getElementById('stat-cc').value].v + 5)).toString(), 
+                    totalCU: document.getElementById('calc-cu').innerText,
+                    threatLevel: document.getElementById('calc-threat').innerText,
+
+                    stats: {
+                        chakraLevel: document.getElementById('stat-cl').options[document.getElementById('stat-cl').selectedIndex].text.split(' ')[0],
+                        chakraControl: document.getElementById('stat-cc').options[document.getElementById('stat-cc').selectedIndex].text.split(' ')[0],
+                        speed: document.getElementById('stat-spd').options[document.getElementById('stat-spd').selectedIndex].text.split(' ')[0],
+                        strength: document.getElementById('stat-str').options[document.getElementById('stat-str').selectedIndex].text.split(' ')[0]
+                    },
+                    skills: {
+                        ninjutsu: document.querySelectorAll('.skill-select')[0].value,
+                        taijutsu: document.querySelectorAll('.skill-select')[1].value,
+                        genjutsu: document.querySelectorAll('.skill-select')[2].value,
+                        fuinjutsu: document.querySelectorAll('.skill-select')[3].value,
+                        bukijutsu: document.querySelectorAll('.skill-select')[4].value,
+                        medical: document.querySelectorAll('.skill-select')[5].value
+                    }
+                };
+
+                const response = await fetch(GOOGLE_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8' 
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    btn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 inline-block mr-2"></i> Success!';
+                    btn.classList.replace('bg-narp-cyan', 'bg-green-600');
+                    statusText.className = "mt-3 text-sm text-green-400 block font-bold";
+                    statusText.innerHTML = `Character generated! <a href="${result.docUrl}" target="_blank" class="underline hover:text-white">Click here to open your Google Doc</a>`;
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                console.error("Generation Error:", error);
+                btn.disabled = false;
+                btn.innerHTML = 'Try Again';
+                btn.classList.replace('bg-narp-cyan', 'bg-narp-error');
+                
+                statusText.className = "mt-3 text-sm text-narp-error block";
+                statusText.innerText = "Failed to generate document. Make sure your Web App URL is correct.";
+            }
+            lucide.createIcons();
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initSkillDropdowns();
+            handleAffiliationChange(); 
+        });
+    </script>
+</body>
+</html>
